@@ -303,7 +303,7 @@ public class SimboxDataGenerator {
                         evilSimBox.moveCell(nextEvilCellId, voltClient);
                         tpThisMs += evilSimBox.getSimCount();
                         evilCellMoves += evilSimBox.getSimCount();
-                        ;
+                        
                     }
 
                     // control number of calls per millisecond

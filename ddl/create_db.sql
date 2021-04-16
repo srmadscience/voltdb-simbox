@@ -1,5 +1,4 @@
 
-load classes ../lib/gson-2.2.2.jar;
 
 load classes ../jars/voltdb-simbox.jar;
 
