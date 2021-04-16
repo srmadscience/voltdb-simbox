@@ -74,14 +74,12 @@ public class RegisterDevice extends VoltProcedure {
  	// @formatter:on
 
     /**
-     * A VoltDB stored procedure to add credit to a user in the chargingdemo demo.
-     * It checks that the user exists and also makes sure that this transaction
-     * hasn't already happened.
+     * Register a device
      * 
-     * @param userId
-     * @param extraCredit
-     * @param txnId
-     * @return Balance and Credit info
+     * @param deviceId
+     * @param cellId
+     * @param createDate
+     * @return
      * @throws VoltAbortException
      */
     public VoltTable[] run(long deviceId, long cellId, TimestampType createDate) throws VoltAbortException {

@@ -151,6 +151,10 @@ CREATE PROCEDURE
    PARTITION ON TABLE device_table COLUMN device_id
    FROM CLASS simbox.ReportDeviceActivity;       
    
+CREATE PROCEDURE 
+   PARTITION ON TABLE device_table COLUMN device_id
+   FROM CLASS simbox.GetDevice;
+   
  CREATE PROCEDURE 
    FROM CLASS simbox.NoteSuspiciousCohort;       
    
@@ -162,7 +166,13 @@ where device_id in ?
 group by suspicious_because
 order by suspicious_because;
 
+create procedure getSuspectSummary AS
+select suspicious_because, how_many  
+from suspicious_totals_view
+order by how_many desc;
 
+create procedure clearStats AS
+UPDATE simbox_stats SET stat_value = 0;
 
 
 CREATE PROCEDURE ShowSimboxActivity__promBL AS
@@ -181,12 +191,6 @@ select 'longest_6_cell_run' statname,
 how_many  statvalue
 from last_6_cells
 order by how_many desc limit 1;
---
-select 'suspicious_because_'||suspicious_because statname, 
-       'suspicious_because_'||suspicious_because stathelp,
-how_many  statvalue
-from suspicious_totals_view
-order by how_many desc;
 --
 select 'simbox_parameter_'||parameter_name statname
      ,  'simbox_parameter_'||parameter_name stathelp  

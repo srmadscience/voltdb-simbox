@@ -359,8 +359,23 @@ public class SimboxDataGenerator {
 
                         
                         zeroStats(voltClient);
-                        
-                        ClientResponse cr = voltClient.callProcedure("getSuspectStatus", simBoxIds);
+  
+                        // See whether suspicious activity has been detected
+                        ClientResponse cr = voltClient.callProcedure("getSuspectSummary", simBoxIds);
+                        if (cr.getStatus() == ClientResponse.SUCCESS) {
+                            VoltTable resultsTable = cr.getResults()[0];
+
+                            while (resultsTable.advanceRow()) {
+                                String suspiciousBecause = resultsTable.getString("suspicious_because");
+                                       long suspiciousCount = resultsTable.getLong("how_many");
+
+                                reportStat("suspicious_because_" + suspiciousBecause, suspiciousCount, voltClient);
+
+                            }
+                        }
+
+                        // See if our sims have been noticed
+                        cr = voltClient.callProcedure("getSuspectStatus", simBoxIds);
                         if (cr.getStatus() == ClientResponse.SUCCESS) {
                             VoltTable resultsTable = cr.getResults()[0];
 
@@ -480,7 +495,7 @@ public class SimboxDataGenerator {
     private static void zeroStats(Client c)
             throws NoConnectionsException, IOException, ProcCallException {
 
-        c.callProcedure("@AdHoc", "UPDATE simbox_stats SET stat_value = 0 WHERE stat_name like 'simboxstatus%';");
+        c.callProcedure("clearStats");
 
     }
 

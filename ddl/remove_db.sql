@@ -4,6 +4,9 @@ DROP PROCEDURE ReportDeviceActivity IF EXISTS;
 DROP PROCEDURE NoteSuspiciousCohort IF EXISTS;       
 DROP procedure getSuspectStatus IF EXISTS;
 DROP PROCEDURE ShowSimboxActivity__promBL IF EXISTS;
+DROP PROCEDURE getSuspectSummary IF EXISTS;
+DROP PROCEDURE clearStats IF EXISTS;
+DROP PROCEDURE GetDevice IF EXISTS;
 
 DROP view suspicious_devices_view IF EXISTS;
 DROP VIEW suspicious_totals_view  IF EXISTS;

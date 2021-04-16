@@ -455,7 +455,7 @@ public class ReportDeviceActivity extends VoltProcedure {
      * 
      * @param suspiciousInCallHistory
      * @param n - how many to compare 
-     * @return 1 if less than n * 2 calls, otherwise ratio top n : bottom n
+     * @return Integer.MAX_VALUE if less than n * 2 calls, otherwise ratio top n : bottom n
      */
     private int getTopNRatio(VoltTable suspiciousInCallHistory, int n) {
 
@@ -475,7 +475,7 @@ public class ReportDeviceActivity extends VoltProcedure {
             }
 
         } else {
-            return 1;
+            return Integer.MAX_VALUE;
         }
 
         return topNCalls / bottomNCalls;
