@@ -179,6 +179,7 @@ public class SimboxDataGenerator {
 
             voltClient.callProcedure("@AdHoc", "DELETE FROM cell_suspicious_cohort_members;");
             voltClient.callProcedure("@AdHoc", "DELETE FROM cell_suspicious_cohorts;");
+            voltClient.callProcedure("@AdHoc", "DELETE FROM simbox_stats;");
 
             // Create cells
             for (int i = 0; i < cellCount; i++) {
