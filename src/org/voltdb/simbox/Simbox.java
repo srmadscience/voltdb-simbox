@@ -344,4 +344,18 @@ public class Simbox {
         return builder.toString();
     }
 
+    /**
+     * @return the evilCallCount
+     */
+    public int getEvilCallCount() {
+        return evilCallCount;
+    }
+
+    /**
+     * @return the fakeCallCount
+     */
+    public int getFakeCallCount() {
+        return fakeCallCount;
+    }
+
 }

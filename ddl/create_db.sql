@@ -66,7 +66,6 @@ CREATE INDEX dt_ix2 ON device_table (cell_history_as_string_last6, device_id);
 
 CREATE INDEX dt_ix3 ON device_table (suspicious_because, device_id);
 
-
 CREATE VIEW suspicious_totals_view AS
 SELECT suspicious_because, count(*) how_many
 FROM device_table
@@ -107,7 +106,6 @@ CREATE table device_cell_history
 PARTITION TABLE device_cell_history ON COLUMN device_id;
 
 CREATE INDEX dch_ix1 ON device_cell_history (device_id, to_timestamp);
-
 
 
 CREATE table device_incoming_call_history

@@ -350,7 +350,8 @@ public class SimboxDataGenerator {
                         reportStat("tps", (long) tps, voltClient);
                         reportStat("sessions", sessionMap.size(), voltClient);
                         reportStat("goodCallCount", goodCallCount, voltClient);
-                        reportStat("evilCount", evilCount, voltClient);
+                        reportStat("fakeCallCount", evilSimBox.getFakeCallCount(), voltClient);
+                        reportStat("evilCount", evilSimBox.getEvilCallCount(), voltClient);
                         reportStat("busyCount", busyCount, voltClient);
                         reportStat("goodCellMoves", goodCellMoves, voltClient);
                         reportStat("evilCellMoves", evilCellMoves, voltClient);
