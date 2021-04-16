@@ -304,7 +304,7 @@ public class SimboxDataGenerator {
                         evilSimBox.moveCell(nextEvilCellId, voltClient);
                         tpThisMs += evilSimBox.getSimCount();
                         evilCellMoves += evilSimBox.getSimCount();
-                        
+
                     }
 
                     // control number of calls per millisecond
@@ -326,7 +326,10 @@ public class SimboxDataGenerator {
                     // Every 60 seconds dump stats to console...
                     if (laststatstime + 60000 < System.currentTimeMillis()) {
 
+                        zeroStats(voltClient);
+                        
                         if (getParam("ENABLE_SUSPICOUS_COHORT_DETECTION", 0, voltClient) == 1) {
+
                             voltClient.callProcedure("NoteSuspiciousCohort");
                         }
 
@@ -358,9 +361,6 @@ public class SimboxDataGenerator {
                         reportStat("evilCellMoves", evilCellMoves, voltClient);
                         reportStat("evilRevenueCents", (long) (evilSimBox.getProjectedProfit() * 100), voltClient);
 
-                        
-                        zeroStats(voltClient);
-  
                         // See whether suspicious activity has been detected
                         ClientResponse cr = voltClient.callProcedure("getSuspectSummary");
                         if (cr.getStatus() == ClientResponse.SUCCESS) {
@@ -368,7 +368,7 @@ public class SimboxDataGenerator {
 
                             while (resultsTable.advanceRow()) {
                                 String suspiciousBecause = resultsTable.getString("suspicious_because");
-                                       long suspiciousCount = resultsTable.getLong("how_many");
+                                long suspiciousCount = resultsTable.getLong("how_many");
 
                                 reportStat("suspicious_because_" + suspiciousBecause, suspiciousCount, voltClient);
 
@@ -493,16 +493,12 @@ public class SimboxDataGenerator {
      * @throws IOException
      * @throws ProcCallException
      */
-    private static void zeroStats(Client c)
-            throws NoConnectionsException, IOException, ProcCallException {
+    private static void zeroStats(Client c) throws NoConnectionsException, IOException, ProcCallException {
 
         c.callProcedure("clearStats");
 
     }
 
-    
-    
-    
     /**
      * 
      * Get a parameter
@@ -528,9 +524,7 @@ public class SimboxDataGenerator {
         return defaultValue;
 
     }
-    
-    
-    
+
     /**
      * Run from command line
      * 
