@@ -362,7 +362,7 @@ public class SimboxDataGenerator {
                         zeroStats(voltClient);
   
                         // See whether suspicious activity has been detected
-                        ClientResponse cr = voltClient.callProcedure("getSuspectSummary", simBoxIds);
+                        ClientResponse cr = voltClient.callProcedure("getSuspectSummary");
                         if (cr.getStatus() == ClientResponse.SUCCESS) {
                             VoltTable resultsTable = cr.getResults()[0];
 
