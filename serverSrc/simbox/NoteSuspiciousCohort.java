@@ -26,25 +26,17 @@ package simbox;
 import org.voltdb.SQLStmt;
 import org.voltdb.VoltProcedure;
 import org.voltdb.VoltTable;
-import org.voltdb.types.TimestampType;
-import org.voltdb.VoltProcedure.VoltAbortException;
 
 /**
- * Global procedure to find groups of devices that all move cell at the same
- * time repeatedly, which is suspicious.
+ * Procedure to find groups of devices that all move cell at the same time
+ * repeatedly, which is suspicious.
+ * 
  *
  */
 public class NoteSuspiciousCohort extends VoltProcedure {
 
     // @formatter:off
 
-
-    public static final SQLStmt getSuspiciousCellMoves = new SQLStmt(
-            "SELECT * "
-            + "FROM last_6_cells "
-            + "ORDER BY how_many DESC"
-            + "        ,cell_history_as_string_last6 "
-            + "LIMIT ?;");
 
     public static final SQLStmt getSuspiciousDevices = new SQLStmt(
             "SELECT device_id, current_cell_id "
@@ -65,65 +57,34 @@ public class NoteSuspiciousCohort extends VoltProcedure {
   	// @formatter:on
 
     /**
-     * How many combinations of last 6 cells we look for. We need at least this
-     * many.
+     * @param cellHistoryBusiest a list of cell movement signatures which lots of
+     *                           devices share
+     * @return
+     * @throws VoltAbortException
      */
-    final int viewSize = 20;
+    public VoltTable[] run(String[] cellHistoryBusiest) throws VoltAbortException {
 
-    /**
-     * How many devices must be in the same cohort before we find it suspicious
-     */
-    final int suspiciousSize = 100;
+        for (int i = 0; i < cellHistoryBusiest.length; i++) {
+            // Get Devices...
+            voltQueueSQL(getSuspiciousDevices, cellHistoryBusiest[i]);
 
-    public VoltTable[] run() throws VoltAbortException {
+            VoltTable suspiciousDevices = voltExecuteSQL()[0];
 
-        // Find top 'viewSize' most common sequences of cell changes
-        voltQueueSQL(getSuspiciousCellMoves, viewSize);
+            // Record existence of cohort and members...
+            long cellId = Long.MIN_VALUE;
+            while (suspiciousDevices.advanceRow()) {
 
-        VoltTable suspiciousMoves = voltExecuteSQL()[0];
-
-        // if we have at least 'viewSize' cohorts in existence...
-        if (suspiciousMoves.getRowCount() == viewSize) {
-
-            suspiciousMoves.advanceRow();
-
-            // get busiest combination of cell changes
-            String cellHistoryBusiest = suspiciousMoves.getString("cell_history_as_string_last6");
-
-            // Find out how many devices did this
-            long sizeBusiest = suspiciousMoves.getLong("how_many");
-
-            // move to last record
-            suspiciousMoves.advanceToRow(viewSize - 1);
-
-            // Find out how many combinations last record has
-            long sizeNthBusiest = suspiciousMoves.getLong("how_many");
-
-            if (sizeBusiest > suspiciousSize) {
-
-                // If busiest is at least twice as common as nth busiest...
-                if ((sizeNthBusiest * 2) < sizeBusiest) {
-
-                    // Get Devices...
-                    voltQueueSQL(getSuspiciousDevices, cellHistoryBusiest);
-
-                    VoltTable suspiciousDevices = voltExecuteSQL()[0];
-
-                    // Record existence of cohort and members...
-                    long cellId = Long.MIN_VALUE;
-                    while (suspiciousDevices.advanceRow()) {
-
-                        if (cellId == Long.MIN_VALUE) {
-                            cellId = suspiciousDevices.getLong("current_cell_id");
-                            voltQueueSQL(createNewCohort, cellId);
-                        }
-
-                        long deviceId = suspiciousDevices.getLong("device_id");
-                        voltQueueSQL(createNewCohortMember, cellId, deviceId);
-                    }
-
+                if (cellId == Long.MIN_VALUE) {
+                    cellId = suspiciousDevices.getLong("current_cell_id");
+                    voltQueueSQL(createNewCohort, cellId);
                 }
+
+                long deviceId = suspiciousDevices.getLong("device_id");
+                voltQueueSQL(createNewCohortMember, cellId, deviceId);
             }
+
+            voltExecuteSQL();
+
         }
 
         return voltExecuteSQL(true);

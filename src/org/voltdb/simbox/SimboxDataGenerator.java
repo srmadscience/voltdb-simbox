@@ -25,9 +25,13 @@ package org.voltdb.simbox;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import org.voltdb.VoltTable;
@@ -35,6 +39,7 @@ import org.voltdb.client.Client;
 import org.voltdb.client.ClientConfig;
 import org.voltdb.client.ClientFactory;
 import org.voltdb.client.ClientResponse;
+import org.voltdb.client.ClientResponseWithPartitionKey;
 import org.voltdb.client.NoConnectionsException;
 import org.voltdb.client.ProcCallException;
 
@@ -123,7 +128,13 @@ public class SimboxDataGenerator {
     /**
      * Maximum length of a call. It's artificially short.
      */
-    public static int MAX_RANDOM_CALL_LENGTH_SECONDS = 60;
+    public static final int MAX_RANDOM_CALL_LENGTH_SECONDS = 60;
+
+    /**
+     * Point at which we regard a group of phones with the same cell change pattern
+     * as suspicious
+     */
+    public static final int COHORT_DETECTION_SIZE = 60;
 
     /**
      * Run a simuation of a phone system where we aim to detect a simbox.
@@ -179,7 +190,7 @@ public class SimboxDataGenerator {
 
             voltClient.callProcedure("@AdHoc", "DELETE FROM cell_suspicious_cohort_members;");
             voltClient.callProcedure("@AdHoc", "DELETE FROM cell_suspicious_cohorts;");
- 
+
             // Create cells
             for (int i = 0; i < cellCount; i++) {
                 voltClient.callProcedure(coec, "cell_table.UPSERT", i);
@@ -264,17 +275,7 @@ public class SimboxDataGenerator {
                             long cellId = callingNumber.getCellId();
 
                             // Move to an adjacent cell...
-                            if (r.nextInt(2) == 0) {
-                                cellId = (cellId + 1) % cellCount;
-                            } else {
-
-                                if (cellId == 0) {
-                                    cellId = cellCount - 1;
-                                } else {
-                                    cellId -= 1;
-                                }
-
-                            }
+                            getNextCellId(cellId);
 
                             voltClient.callProcedure(coec, "ReportCellChange",
                                     callingNumber.changeCellid(r.nextInt(cellCount)));
@@ -322,14 +323,19 @@ public class SimboxDataGenerator {
                         tpThisMs = 0;
                     }
 
-                    // Every 60 seconds dump stats to console...
+                    // Every 60 seconds dump stats to console and
+                    // check for suspicious cohorts
                     if (laststatstime + 60000 < System.currentTimeMillis()) {
 
                         zeroStats(voltClient);
-                        
+
                         if (getParam("ENABLE_SUSPICOUS_COHORT_DETECTION", 0, voltClient) == 1) {
 
-                            voltClient.callProcedure("NoteSuspiciousCohort");
+                            String[] cohort = getSuspiciousCohort();
+                            Object[] cohortWrapper = { cohort };
+                            if (cohort.length > 0) {
+                                voltClient.callProcedure("NoteSuspiciousCohort", cohortWrapper);
+                            }
                         }
 
                         if (getParam("SIMBOX_CALLS_ITSELF", 0, voltClient) == 1) {
@@ -338,9 +344,6 @@ public class SimboxDataGenerator {
                             evilSimBox.setSelfCalls(false);
                         }
 
-                        double tps = (1000 * goodCallCount) / (System.currentTimeMillis() - laststatstime);
-
-                        SimboxDataGenerator.msg("Calls Per Second=" + (long) tps);
                         SimboxDataGenerator.msg("Active Sessions: " + sessionMap.size());
                         SimboxDataGenerator.msg("skipCount = " + skipCount);
                         SimboxDataGenerator.msg("busyCount = " + busyCount);
@@ -350,7 +353,6 @@ public class SimboxDataGenerator {
                         SimboxDataGenerator.msg("evilCellMoves = " + evilCellMoves);
                         SimboxDataGenerator.msg(evilSimBox.toString());
 
-                        reportStat("tps", (long) tps, voltClient);
                         reportStat("sessions", sessionMap.size(), voltClient);
                         reportStat("goodCallCount", goodCallCount, voltClient);
                         reportStat("fakeCallCount", evilSimBox.getFakeCallCount(), voltClient);
@@ -361,7 +363,7 @@ public class SimboxDataGenerator {
                         reportStat("evilRevenueCents", (long) (evilSimBox.getProjectedProfit() * 100), voltClient);
 
                         // See whether suspicious activity has been detected
-                        ClientResponse cr = voltClient.callProcedure("getSuspectSummary");
+                        ClientResponse cr = voltClient.callProcedure("getSuspectedDeviceSummary");
                         if (cr.getStatus() == ClientResponse.SUCCESS) {
                             VoltTable resultsTable = cr.getResults()[0];
 
@@ -373,9 +375,9 @@ public class SimboxDataGenerator {
 
                             }
                         }
-
+                        
                         // See if our sims have been noticed
-                        cr = voltClient.callProcedure("getSuspectStatus", simBoxIds);
+                        cr = voltClient.callProcedure("getSimboxDeviceStatus", simBoxIds);
                         if (cr.getStatus() == ClientResponse.SUCCESS) {
                             VoltTable resultsTable = cr.getResults()[0];
 
@@ -424,6 +426,94 @@ public class SimboxDataGenerator {
             e.printStackTrace();
         }
 
+    }
+
+    /**
+     * Move to next cell
+     * 
+     * @param oldCellId
+     * @return
+     */
+    private long getNextCellId(long oldCellId) {
+      
+        long newCellId = oldCellId;
+        
+        if (r.nextInt(2) == 0) {
+            newCellId = (oldCellId + 1) % cellCount;
+        } else {
+
+            if (oldCellId == 0) {
+                newCellId = cellCount - 1;
+            } else {
+                newCellId = oldCellId - 1;
+            }
+
+        }
+        
+        return newCellId;
+    }
+
+    /**
+     * find busiest cohorts using a directed procedure...
+     * 
+      * @return array of suspicious cohort cell changes
+     * @throws ProcCallException
+     * @throws IOException
+     * @throws NoConnectionsException
+     */
+    private String[] getSuspiciousCohort() throws NoConnectionsException, IOException, ProcCallException {
+
+        HashMap<String, Long> cellRuns = new HashMap<String, Long>();
+
+        ClientResponseWithPartitionKey[] cr = voltClient.callAllPartitionProcedure("GetPartition6CellRuns");
+        for (int i = 0; i < cr.length; i++) {
+            if (cr[i].response.getStatus() == ClientResponse.SUCCESS) {
+                VoltTable resultsTable = cr[i].response.getResults()[0];
+
+                while (resultsTable.advanceRow()) {
+
+                    String last6 = resultsTable.getString("CELL_HISTORY_AS_STRING_LAST6");
+                    long suspiciousCount = resultsTable.getLong("how_many");
+
+                    Long testValue = cellRuns.get(last6);
+
+                    if (testValue == null) {
+                        cellRuns.put(last6, suspiciousCount);
+                    } else {
+                        cellRuns.put(last6, testValue.longValue() + suspiciousCount);
+                    }
+
+                }
+                
+            }
+        }
+
+        ArrayList<String> cellIds = new ArrayList<String>();
+
+        long maxValue = 0;
+
+        Iterator<Entry<String, Long>> it = cellRuns.entrySet().iterator();
+        while (it.hasNext()) {
+            Entry<String, Long> pair = it.next();
+
+            Long value = (Long) pair.getValue();
+
+            if (value.longValue() >= COHORT_DETECTION_SIZE) {
+                cellIds.add((String) pair.getKey());
+
+                if (maxValue < value.longValue()) {
+                    maxValue = value.longValue();
+                }
+            }
+
+            it.remove();
+        }
+
+        reportStat("largest_6_cell_cohort", maxValue, voltClient);
+
+        String[] cellIdsAsStringArray = new String[cellIds.size()];
+
+        return cellIds.toArray(cellIdsAsStringArray);
     }
 
     /**

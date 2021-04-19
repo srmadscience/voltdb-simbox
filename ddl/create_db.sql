@@ -23,6 +23,8 @@ CREATE table cell_table
 (cell_id bigint not null primary key);
 
 
+--
+
 CREATE table cell_suspicious_cohorts
 (cell_id bigint not null
 ,event_date timestamp not null
@@ -99,13 +101,14 @@ CREATE table device_cell_history
 ,incoming_call_duration bigint default 0 not null
 ,outgoing_call_duration bigint default 0 not null
 ,suspicious_because varchar(120)
-,primary key (device_id,from_timestamp)
-);
+,primary key (device_id,from_timestamp));
 
 
 PARTITION TABLE device_cell_history ON COLUMN device_id;
 
 CREATE INDEX dch_ix1 ON device_cell_history (device_id, to_timestamp);
+
+CREATE INDEX dch_ix1 ON device_cell_history (to_timestamp,device_id, );
 
 
 CREATE table device_incoming_call_history
@@ -158,7 +161,7 @@ CREATE PROCEDURE
  CREATE PROCEDURE 
    FROM CLASS simbox.NoteSuspiciousCohort;       
    
-create procedure getSuspectStatus as 
+create procedure getSimboxDeviceStatus as 
 select suspicious_because
      , count(*) how_many
 from device_table 
@@ -166,7 +169,7 @@ where device_id in ?
 group by suspicious_because
 order by suspicious_because;
 
-create procedure getSuspectSummary AS
+create procedure getSuspectedDeviceSummary AS
 select suspicious_because, how_many  
 from suspicious_totals_view
 order by how_many desc;
@@ -174,23 +177,24 @@ order by how_many desc;
 create procedure clearStats AS
 UPDATE simbox_stats SET stat_value = 0;
 
+CREATE procedure GetPartition6CellRuns 
+DIRECTED 
+AS
+select cell_history_as_string_last6
+     , how_many  
+from last_6_cells
+order by how_many desc limit 3;
+
+CREATE procedure GetPartition3CellRuns 
+DIRECTED 
+AS
+select cell_history_as_string_last3
+     , how_many  
+from last_3_cells
+order by how_many desc limit 1;
 
 CREATE PROCEDURE ShowSimboxActivity__promBL AS
 BEGIN
---
-select 'longest_3_cell_run' statname, 
-       'longest_3_cell_run' stathelp ,
-'longest_3_cell_run',
-how_many  statvalue
-from last_3_cells
-order by how_many desc limit 1;
---
-select 'longest_6_cell_run' statname, 
-       'longest_6_cell_run' stathelp ,
-'longest_6_cell_run',
-how_many  statvalue
-from last_6_cells
-order by how_many desc limit 1;
 --
 select 'simbox_parameter_'||parameter_name statname
      ,  'simbox_parameter_'||parameter_name stathelp  
@@ -208,6 +212,10 @@ END;
 
 END_OF_BATCH
 
+
+--
+-- These parameters can be changed while the system is running
+--
 upsert into simbox_parameters
 (parameter_name,parameter_value)
 VALUES
@@ -248,18 +256,21 @@ upsert into simbox_parameters
 VALUES
 ('SIMBOX_CALLS_ITSELF',0);
 
-UPSERT INTO simbox_stats VALUES ('simbox_stats_simboxstatus_not_suspected',0);
-UPSERT INTO simbox_stats VALUES ('simbox_stats_simboxstatus_some_incoming_calls_from_known_bad_numbers',0);
-UPSERT INTO simbox_stats VALUES ('simbox_stats_simboxstatus_suspicious_device_has_no_incoming_calls',0);
-UPSERT INTO simbox_stats VALUES ('simbox_stats_simboxstatus_suspiciously_moving_device',0);
-
-UPSERT INTO simbox_stats VALUES ('simbox_stats_suspicious_because_some_incoming_calls_from_known_bad_numbers',0);
-UPSERT INTO simbox_stats VALUES ('simbox_stats_suspicious_because_suspicious_device_has_no_incoming_calls',0);
-UPSERT INTO simbox_stats VALUES ('simbox_stats_suspicious_because_suspiciously_moving_device',0);
-UPSERT INTO simbox_stats VALUES ('simbox_stats_suspicious_because_all_incoming_calls_from_known_bad_numbers',0);
- UPSERT INTO simbox_stats VALUES ('simbox_stats_suspicious_because_total_incoming_outgoing_ratio_bad',0);
- UPSERT INTO simbox_stats VALUES ('simbox_stats_suspicious_because_topn_incoming_outgoing_ratio_bad',0);
-                                                                                                          
+--
+-- We create values for all stats so prometheus works properly...
+--
+UPSERT INTO simbox_stats VALUES ('max_3_cell_run_length',0);
+UPSERT INTO simbox_stats VALUES ('max_6_cell_run_length',0);
+UPSERT INTO simbox_stats VALUES ('simboxstatus_not_suspected',0);
+UPSERT INTO simbox_stats VALUES ('simboxstatus_some_incoming_calls_from_known_bad_numbers',0);
+UPSERT INTO simbox_stats VALUES ('simboxstatus_suspicious_device_has_no_incoming_calls',0);
+UPSERT INTO simbox_stats VALUES ('simboxstatus_suspiciously_moving_device',0);
+UPSERT INTO simbox_stats VALUES ('suspicious_because_some_incoming_calls_from_known_bad_numbers',0);
+UPSERT INTO simbox_stats VALUES ('suspicious_because_suspicious_device_has_no_incoming_calls',0);
+UPSERT INTO simbox_stats VALUES ('suspicious_because_suspiciously_moving_device',0);
+UPSERT INTO simbox_stats VALUES ('suspicious_because_all_incoming_calls_from_known_bad_numbers',0);
+UPSERT INTO simbox_stats VALUES ('suspicious_because_total_incoming_outgoing_ratio_bad',0);
+UPSERT INTO simbox_stats VALUES ('suspicious_because_topn_incoming_outgoing_ratio_bad',0);                                                                                                          
 
 
 
