@@ -236,7 +236,7 @@ VALUES
 upsert into simbox_parameters
 (parameter_name,parameter_value)
 VALUES
-('TOP_N',20);
+('TOP_N',6);
 
 upsert into simbox_parameters
 (parameter_name,parameter_value)
