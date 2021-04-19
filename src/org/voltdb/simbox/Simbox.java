@@ -173,7 +173,7 @@ public class Simbox {
      * @throws NoConnectionsException
      * @throws IOException
      */
-    public boolean routeInternationalCall(UserDevice calledNumber, Client client)
+    public boolean routeInternationalCall(UserDevice calledNumber, Client client, int durationSeconds)
             throws NoConnectionsException, IOException {
 
         if (selfCalls) {
@@ -184,8 +184,6 @@ public class Simbox {
                 return makeFakeCall(client);
             }
         }
-
-        int durationSeconds = r.nextInt(SimboxDataGenerator.MAX_RANDOM_CALL_LENGTH_SECONDS);
 
         UserDevice ud = getUnusedDevice();
 
@@ -212,8 +210,7 @@ public class Simbox {
      */
     private boolean makeFakeCall(Client client) throws NoConnectionsException, IOException {
 
-        int durationSeconds = r.nextInt(SimboxDataGenerator.MAX_RANDOM_CALL_LENGTH_SECONDS);
-
+        
         UserDevice ud = getUnusedDevice();
         UserDevice fakeCaller = getUnusedDevice();
 
@@ -224,7 +221,8 @@ public class Simbox {
 
         fakeCallCount++;
 
-        fakeCaller.makeCall(r, ud, durationSeconds, client);
+        // make a 10 second fake call
+        fakeCaller.makeCall(r, ud, 10, client);
 
         return true;
 

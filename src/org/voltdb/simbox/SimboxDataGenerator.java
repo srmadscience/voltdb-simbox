@@ -128,7 +128,7 @@ public class SimboxDataGenerator {
     /**
      * Maximum length of a call. It's artificially short.
      */
-    public static final int MAX_RANDOM_CALL_LENGTH_SECONDS = 60;
+    int maxRandomCallLengthSeconds = 60;
 
     /**
      * Point at which we regard a group of phones with the same cell change pattern
@@ -144,16 +144,18 @@ public class SimboxDataGenerator {
      * @param tpMs
      * @param durationSeconds
      * @param cellCount
+     * @param maxRandomCallLengthSeconds
      * @throws Exception
      */
-    public SimboxDataGenerator(String hostnames, int userCount, int tpMs, int durationSeconds, int cellCount)
-            throws Exception {
+    public SimboxDataGenerator(String hostnames, int userCount, int tpMs, int durationSeconds, int cellCount,
+            int maxRandomCallLengthSeconds) throws Exception {
 
         this.hostnames = hostnames;
         this.userCount = userCount;
         this.tpMs = tpMs;
         this.durationSeconds = durationSeconds;
         this.cellCount = cellCount;
+        this.maxRandomCallLengthSeconds = maxRandomCallLengthSeconds;
 
         evilSimBox = new Simbox(0);
         sessionMap = new HashMap<Long, UserDevice>(userCount);
@@ -260,8 +262,12 @@ public class SimboxDataGenerator {
                     busyCount++;
                 } else {
 
-                    // See if the simbox has capacity to make a call, and if so, make one...
-                    if (evilSimBox.routeInternationalCall(calledNumber, voltClient)) {
+                    int callLength = r.nextInt(maxRandomCallLengthSeconds);
+
+                    // Try making a simbox call
+                    boolean simboxCallMade = evilSimBox.routeInternationalCall(calledNumber, voltClient, callLength);
+
+                    if (simboxCallMade) {
                         evilCount++;
                     } else {
 
@@ -285,8 +291,6 @@ public class SimboxDataGenerator {
                         } else {
 
                             // make a normal call
-
-                            int callLength = r.nextInt(MAX_RANDOM_CALL_LENGTH_SECONDS);
 
                             callingNumber.makeCall(r, calledNumber, callLength, voltClient);
 
@@ -375,7 +379,7 @@ public class SimboxDataGenerator {
 
                             }
                         }
-                        
+
                         // See if our sims have been noticed
                         cr = voltClient.callProcedure("getSimboxDeviceStatus", simBoxIds);
                         if (cr.getStatus() == ClientResponse.SUCCESS) {
@@ -435,9 +439,9 @@ public class SimboxDataGenerator {
      * @return
      */
     private long getNextCellId(long oldCellId) {
-      
+
         long newCellId = oldCellId;
-        
+
         if (r.nextInt(2) == 0) {
             newCellId = (oldCellId + 1) % cellCount;
         } else {
@@ -449,14 +453,14 @@ public class SimboxDataGenerator {
             }
 
         }
-        
+
         return newCellId;
     }
 
     /**
      * find busiest cohorts using a directed procedure...
      * 
-      * @return array of suspicious cohort cell changes
+     * @return array of suspicious cohort cell changes
      * @throws ProcCallException
      * @throws IOException
      * @throws NoConnectionsException
@@ -484,7 +488,7 @@ public class SimboxDataGenerator {
                     }
 
                 }
-                
+
             }
         }
 
@@ -622,8 +626,9 @@ public class SimboxDataGenerator {
      */
     public static void main(String[] args) throws Exception {
 
-        if (args.length != 5) {
-            SimboxDataGenerator.msg("Usage: SimboxDataGenerator hostnames userCount tpMs durationSeconds cellCount ");
+        if (args.length != 6) {
+            SimboxDataGenerator.msg(
+                    "Usage: SimboxDataGenerator hostnames userCount tpMs durationSeconds cellCount maxRandomCallLengthSeconds");
             System.exit(1);
         }
 
@@ -632,9 +637,12 @@ public class SimboxDataGenerator {
         int tpMs = Integer.parseInt(args[2]);
         int durationSeconds = Integer.parseInt(args[3]);
         int cellCount = Integer.parseInt(args[4]);
+        int maxRandomCallLengthSeconds = Integer.parseInt(args[5]);
 
-        msg("[hostnames userCount tpMs durationSeconds cellCount ]=" + Arrays.toString(args));
-        SimboxDataGenerator pdg = new SimboxDataGenerator(hostnames, userCount, tpMs, durationSeconds, cellCount);
+        msg("[hostnames userCount tpMs durationSeconds cellCount maxRandomCallLengthSeconds ]="
+                + Arrays.toString(args));
+        SimboxDataGenerator pdg = new SimboxDataGenerator(hostnames, userCount, tpMs, durationSeconds, cellCount,
+                maxRandomCallLengthSeconds);
 
         pdg.run();
 
@@ -743,6 +751,13 @@ public class SimboxDataGenerator {
         String strDate = sdfDate.format(now);
         System.out.println(strDate + ":" + e.getClass().getName() + ":" + e.getMessage());
 
+    }
+
+    /**
+     * @return the maxRandomCallLengthSeconds
+     */
+    public int getMaxRandomCallLengthSeconds() {
+        return maxRandomCallLengthSeconds;
     }
 
 }

@@ -108,9 +108,6 @@ PARTITION TABLE device_cell_history ON COLUMN device_id;
 
 CREATE INDEX dch_ix1 ON device_cell_history (device_id, to_timestamp);
 
-CREATE INDEX dch_ix1 ON device_cell_history (to_timestamp,device_id, );
-
-
 CREATE table device_incoming_call_history
 (device_id bigint not null 
 ,other_number  bigint not null 
@@ -158,7 +155,7 @@ CREATE PROCEDURE
    PARTITION ON TABLE device_table COLUMN device_id
    FROM CLASS simbox.GetDevice;
    
- CREATE PROCEDURE 
+CREATE PROCEDURE 
    FROM CLASS simbox.NoteSuspiciousCohort;       
    
 create procedure getSimboxDeviceStatus as 
