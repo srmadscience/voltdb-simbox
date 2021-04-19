@@ -5,4 +5,4 @@ cd /home/ubuntu
 
 cd voltdb-simbox/scripts
 
-sqlcmd --servers=vdb1 < ../ddl/create_db.sql
+sqlcmd --servers=$1 < ../ddl/create_db.sql
