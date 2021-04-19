@@ -48,6 +48,16 @@ public class GetDevice extends VoltProcedure {
     
     public static final SQLStmt getOutgoingCallHistory = new SQLStmt(
             "SELECT * FROM device_outgoing_call_history WHERE device_id = ? ORDER BY START_TIME;");
+ 
+    public static final SQLStmt getDeviceOutgoingHistoryByDevice = new SQLStmt(
+            "SELECT other_number "
+            + "    , count(*) how_many "
+            + "FROM device_outgoing_call_history "
+            + "WHERE device_id = ? "
+            + "AND   start_time >= DATEADD(HOUR, -1 * ?, NOW)"
+            + "GROUP BY other_number "
+            + "ORDER BY count(*) DESC ; ");
+
 
  	// @formatter:on
 
@@ -63,6 +73,7 @@ public class GetDevice extends VoltProcedure {
         voltQueueSQL(getDeviceCellHistory, deviceId);
         voltQueueSQL(getIncomingCallHistory, deviceId);
         voltQueueSQL(getOutgoingCallHistory, deviceId);
+        voltQueueSQL(getDeviceOutgoingHistoryByDevice, deviceId,24);
 
         return voltExecuteSQL(true);
     }

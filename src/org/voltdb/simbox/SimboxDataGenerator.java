@@ -186,6 +186,9 @@ public class SimboxDataGenerator {
             int goodCellMoves = 0;
             int evilCellMoves = 0;
 
+            long knownGoodDeviceId = -1;
+            long knownBadDeviceId = -1;
+
             SimboxDataGenerator.msg("Creating cells");
 
             ComplainOnErrorCallback coec = new ComplainOnErrorCallback();
@@ -213,6 +216,9 @@ public class SimboxDataGenerator {
                 if (evilSimBox.getSimCount() < Simbox.SIMBOX_SIZE && r.nextInt(100) == 0) {
                     createDateInPastMs = r.nextInt(ONE_DAY_IN_MS);
                     evilSimBox.addSim(ud);
+                    knownBadDeviceId = ud.getDeviceId();
+                } else {
+                    knownGoodDeviceId = ud.getDeviceId();
                 }
 
                 Date createDate = new Date(System.currentTimeMillis() - createDateInPastMs);
@@ -348,6 +354,9 @@ public class SimboxDataGenerator {
                             evilSimBox.setSelfCalls(false);
                         }
 
+                        printDeviceStats("Good Device", knownGoodDeviceId, voltClient);
+                        printDeviceStats("Bad Device", knownBadDeviceId, voltClient);
+
                         SimboxDataGenerator.msg("Active Sessions: " + sessionMap.size());
                         SimboxDataGenerator.msg("skipCount = " + skipCount);
                         SimboxDataGenerator.msg("busyCount = " + busyCount);
@@ -428,6 +437,24 @@ public class SimboxDataGenerator {
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+    }
+
+    private void printDeviceStats(String message, long deviceId, Client voltClient)
+            throws NoConnectionsException, IOException, ProcCallException {
+        SimboxDataGenerator.msg(message);
+
+        ClientResponse cr = voltClient.callProcedure("GetDevice", deviceId);
+        if (cr.getStatus() == ClientResponse.SUCCESS) {
+            VoltTable[] resultsTables = cr.getResults();
+
+            for (int i = 0; i < resultsTables.length; i++) {
+
+                msg(resultsTables[i].toFormattedString());
+
+            }
+
         }
 
     }
