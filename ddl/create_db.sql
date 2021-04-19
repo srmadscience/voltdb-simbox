@@ -236,12 +236,12 @@ VALUES
 upsert into simbox_parameters
 (parameter_name,parameter_value)
 VALUES
-('TOP_N',6);
+('TOP_N',10);
 
 upsert into simbox_parameters
 (parameter_name,parameter_value)
 VALUES
-('TOP_BOTTOM_N_RATIO',3);
+('TOP_BOTTOM_N_RATIO',10);
 
 upsert into simbox_parameters
 (parameter_name,parameter_value)
@@ -258,10 +258,14 @@ VALUES
 --
 UPSERT INTO simbox_stats VALUES ('max_3_cell_run_length',0);
 UPSERT INTO simbox_stats VALUES ('max_6_cell_run_length',0);
+
 UPSERT INTO simbox_stats VALUES ('simboxstatus_not_suspected',0);
 UPSERT INTO simbox_stats VALUES ('simboxstatus_some_incoming_calls_from_known_bad_numbers',0);
 UPSERT INTO simbox_stats VALUES ('simboxstatus_suspicious_device_has_no_incoming_calls',0);
 UPSERT INTO simbox_stats VALUES ('simboxstatus_suspiciously_moving_device',0);
+UPSERT INTO simbox_stats VALUES ('simboxstatus_total_incoming_outgoing_ratio_bad',0);
+UPSERT INTO simbox_stats VALUES ('simboxstatus_topn_incoming_outgoing_ratio_bad',0);
+
 UPSERT INTO simbox_stats VALUES ('suspicious_because_some_incoming_calls_from_known_bad_numbers',0);
 UPSERT INTO simbox_stats VALUES ('suspicious_because_suspicious_device_has_no_incoming_calls',0);
 UPSERT INTO simbox_stats VALUES ('suspicious_because_suspiciously_moving_device',0);

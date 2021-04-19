@@ -259,7 +259,7 @@ public class ReportDeviceActivity extends VoltProcedure {
         final long incomingCallThreshold = getParameter(2, firstResults[1]);
         final long outgoingIncoming = getParameter(10, firstResults[2]);
         final long notNewAnyMoreDays = getParameter(10, firstResults[3]);
-        final long buysnessPercentage = getParameter(30, firstResults[4]);
+        final long busynessPercentage = getParameter(30, firstResults[4]);
         final long hoursBackToCheck = getParameter(3, firstResults[5]);
         final long topN = getParameter(5, firstResults[6]);
         final long topBottomNRatio = getParameter(10, firstResults[7]);
@@ -309,7 +309,7 @@ public class ReportDeviceActivity extends VoltProcedure {
 
             }
 
-            long actualBusyOutCallPct = getActualBusyOutCallPct(outgoingCallThreshold, secondResults[2]);
+            long actualBusyOutCallPct = getActualBusyOutCallPct(outgoingCallThreshold, secondResults[1]);
 
             long actualBusyInCallPct = getActualBusyInCallPct(incomingCallThreshold, secondResults[2]);
 
@@ -318,7 +318,7 @@ public class ReportDeviceActivity extends VoltProcedure {
             long outCallTopBottomNRatio = getTopNRatio(secondResults[4], (int) topN);
 
             // Decide what kind of device this is...
-            if (thisDeviceIsSuspicious // Known suspicous number
+            if (thisDeviceIsSuspicious // Known suspicious number
                     && actualBusyInCallPct >= 1 // We have incoming calls..
                     && actualBusyInCallSuspicuousPct == actualBusyInCallPct) // All of them are from bad numbers
             {
@@ -326,13 +326,13 @@ public class ReportDeviceActivity extends VoltProcedure {
                 voltQueueSQL(flagDevice, "all_incoming_calls_from_known_bad_numbers", actualBusyInCallSuspicuousPct,
                         deviceId);
 
-            } else if (thisDeviceIsSuspicious && // Known suspicous number
+            } else if (thisDeviceIsSuspicious && // Known suspicious number
                     actualBusyInCallSuspicuousPct > 1) { // At least one call from a bad number
 
                 voltQueueSQL(flagDevice, "some_incoming_calls_from_known_bad_numbers", actualBusyInCallSuspicuousPct,
                         deviceId);
 
-            } else if (thisDeviceIsSuspicious // Known suspicous number
+            } else if (thisDeviceIsSuspicious // Known suspicious number
                     && incomingCallCount == 0 // no incoming calls
                     && outgoingCallCount > 0 // some outgoing calls
             ) {
@@ -342,13 +342,13 @@ public class ReportDeviceActivity extends VoltProcedure {
 
                 voltQueueSQL(flagDevice, "suspiciously_moving_device", actualBusyOutCallPct, deviceId);
 
-            } else if ((actualBusyInCallPct + actualBusyOutCallPct) >= buysnessPercentage // We're very busy
+            } else if ((actualBusyInCallPct + actualBusyOutCallPct) >= busynessPercentage // We're very busy
                     && (outgoingIncoming * incomingCallCount) < outgoingCallCount) { // Lots of calls out
 
                 voltQueueSQL(flagDevice, "total_incoming_outgoing_ratio_bad",
                         actualBusyInCallPct + actualBusyOutCallPct, deviceId);
 
-            } else if ((actualBusyInCallPct + actualBusyOutCallPct) >= buysnessPercentage // We're very busy
+            } else if ((actualBusyInCallPct + actualBusyOutCallPct) >= busynessPercentage // We're very busy
                     && outCallTopBottomNRatio < topBottomNRatio) { // Lots of calls out
 
                 voltQueueSQL(flagDevice, "topn_incoming_outgoing_ratio_bad", outCallTopBottomNRatio, deviceId);
