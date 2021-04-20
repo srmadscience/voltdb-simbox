@@ -382,8 +382,9 @@ public class ReportDeviceActivity extends VoltProcedure {
                 final long timePeriodSeconds = (lastSeen.asApproximateJavaDate().getTime()
                         - firstSeen.asApproximateJavaDate().getTime()) / 1000;
 
+                if (timePeriodSeconds > 0) {
                 actualBusyOutCallPct = (100 * outgoingCallDurationRecent) / timePeriodSeconds;
-
+                }
             }
         }
         return actualBusyOutCallPct;
@@ -409,9 +410,9 @@ public class ReportDeviceActivity extends VoltProcedure {
                 // calculate time period covered in seconds
                 final long timePeriodSeconds = (lastSeen.asApproximateJavaDate().getTime()
                         - firstSeen.asApproximateJavaDate().getTime()) / 1000;
-
+                if (timePeriodSeconds > 0) {
                 actualBusyInCallPct = (100 * incomingCallDurationRecent) / timePeriodSeconds;
-
+                }
             }
         }
         return actualBusyInCallPct;
