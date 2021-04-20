@@ -263,7 +263,6 @@ UPSERT INTO simbox_stats VALUES ('simboxstatus_suspicious_device_has_no_incoming
 UPSERT INTO simbox_stats VALUES ('simboxstatus_suspiciously_moving_device',0);
 UPSERT INTO simbox_stats VALUES ('simboxstatus_total_incoming_outgoing_ratio_bad',0);
 UPSERT INTO simbox_stats VALUES ('simboxstatus_topn_incoming_outgoing_ratio_bad',0);
-simbox_stats_suspicious_because_total_incoming_outgoing_ratio_bad
 
 UPSERT INTO simbox_stats VALUES ('suspicious_because_some_incoming_calls_from_known_bad_numbers',0);
 UPSERT INTO simbox_stats VALUES ('suspicious_because_suspicious_device_has_no_incoming_calls',0);
