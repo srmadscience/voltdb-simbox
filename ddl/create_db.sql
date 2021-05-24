@@ -22,9 +22,6 @@ CREATE TABLE simbox_stats
 CREATE table cell_table
 (cell_id bigint not null primary key);
 
-
---
-
 CREATE table cell_suspicious_cohorts
 (cell_id bigint not null
 ,event_date timestamp not null
@@ -38,7 +35,6 @@ CREATE table cell_suspicious_cohort_members
 
 CREATE INDEX cscm_ix1 ON cell_suspicious_cohort_members
 (device_id,event_date);
-
 
 CREATE view suspicious_devices_view AS
 SELECT device_id, min(event_date) min_event_date
